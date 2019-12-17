@@ -9,17 +9,30 @@ export MIX_ENV=prod
 
 source /etc/environment
 
+# Upgrade npm and node
+cat bin/deployment/upgrade_node | bash -
+yum remove -y nodejs npm
+yum install -y nodejs
+
 mix local.rebar --force
 mix local.hex --force
 
 mix deps.get
+mix deps.compile
 
 mix compile
 
 # Install node dependencies
+pushd apps/block_scout_web/assets || exit 1
+npm install
+node_modules/webpack/bin/webpack.js --mode production
+popd
+
 pushd apps/explorer || exit 1
 npm install
 popd
+
+mix phx.digest
 
 chown -R ec2-user:ec2-user /opt/app
 
